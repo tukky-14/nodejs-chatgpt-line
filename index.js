@@ -1,4 +1,5 @@
 const { Configuration, OpenAIApi } = require('openai');
+const line = require('@line/bot-sdk');
 require('dotenv').config();
 
 const configuration = new Configuration({
@@ -6,15 +7,33 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-const askChatGPT = async () => {
+const client = new line.Client({
+    channelAccessToken: process.env.LINE_ACCESS_TOKEN,
+    channelSecret: process.env.LINE_CHANNEL_SECRET,
+});
+
+exports.handler = async (event) => {
+    console.log('event:', JSON.stringify(event));
+
+    const message = event.events[0].message.text;
+    const userId = event.events[0].source.userId;
+
     const completion = await openai.createChatCompletion({
         model: 'gpt-3.5-turbo',
         messages: [
-            { role: 'system', content: 'あなたはプロのITエンジニアです。' },
-            { role: 'user', content: '良いコードとはどんなコードですか？' },
+            { role: 'system', content: 'あなたはプロの保育士です。' },
+            { role: 'user', content: message },
         ],
     });
-    console.log(completion.data.choices[0].message.content);
-};
 
-askChatGPT();
+    const replyMessage = {
+        type: 'text',
+        text: completion.data.choices[0].message.content,
+    };
+    await client.replyMessage(userId, replyMessage);
+
+    return {
+        statusCode: 200,
+        body: JSON.stringify('Message sent.'),
+    };
+};
