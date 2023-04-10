@@ -9,7 +9,6 @@ const openai = new OpenAIApi(configuration);
 
 const client = new line.Client({
     channelAccessToken: process.env.LINE_ACCESS_TOKEN,
-    channelSecret: process.env.LINE_CHANNEL_SECRET,
 });
 
 exports.handler = async (event) => {
@@ -17,6 +16,7 @@ exports.handler = async (event) => {
 
     const message = event.events[0].message.text;
     const userId = event.events[0].source.userId;
+    const replyToken = event.events[0].replyToken;
 
     const completion = await openai.createChatCompletion({
         model: 'gpt-3.5-turbo',
@@ -30,7 +30,7 @@ exports.handler = async (event) => {
         type: 'text',
         text: completion.data.choices[0].message.content,
     };
-    await client.replyMessage(userId, replyMessage);
+    await client.replyMessage(replyToken, replyMessage);
 
     return {
         statusCode: 200,
