@@ -1,5 +1,6 @@
 const { Configuration, OpenAIApi } = require('openai');
 const line = require('@line/bot-sdk');
+const { personality } = require('./personality.js');
 require('dotenv').config();
 
 const configuration = new Configuration({
@@ -21,7 +22,7 @@ exports.handler = async (event) => {
     const completion = await openai.createChatCompletion({
         model: 'gpt-3.5-turbo',
         messages: [
-            { role: 'system', content: 'あなたはプロの保育士です。' },
+            { role: 'system', content: personality },
             { role: 'user', content: message },
         ],
     });
