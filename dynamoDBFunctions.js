@@ -9,7 +9,7 @@ const dayjs = require('dayjs');
  * @param {*} message
  * @param {*} replyMessage
  */
-exports.putDynamoDB = async (userId, timestamp, message, replyMessage) => {
+exports.putMessageHistory = async (userId, timestamp, message, replyMessage) => {
     const now = dayjs().format('YYYYMMDDHHmmss');
     const params = {
         TableName: 'baby_chat_history',
@@ -17,11 +17,10 @@ exports.putDynamoDB = async (userId, timestamp, message, replyMessage) => {
             user_id: { S: userId },
             timestamp: { N: timestamp.toString() },
             message: { S: message },
-            replyMessage: { S: replyMessage },
+            reply_message: { S: replyMessage },
             created_at: { N: now },
         },
     };
-
     console.log('params:', params);
 
     await dynamodb.putItem(params, function (err, data) {
@@ -31,4 +30,40 @@ exports.putDynamoDB = async (userId, timestamp, message, replyMessage) => {
             console.log('PutItem succeeded:', JSON.stringify(data, null, 2));
         }
     });
+};
+
+/**
+ * DynamoDBから直近5回の会話を取得
+ * @param {*} userId
+ */
+exports.getMessageHistory = async (userId) => {
+    const params = {
+        TableName: 'baby_chat_history',
+        KeyConditionExpression: 'user_id = :user_id',
+        ExpressionAttributeValues: {
+            ':user_id': { S: userId },
+        },
+        ScanIndexForward: false,
+        Limit: 5,
+    };
+
+    const data = await dynamodb.query(params).promise();
+    console.log('data:', data);
+
+    const pastMessages = data.Items.sort((a, b) => {
+        return a.timestamp.N - b.timestamp.N;
+    }).map((item) => {
+        return {
+            message: item.message.S,
+            replyMessage: item.reply_message.S,
+        };
+    });
+
+    const pastMessageArray = [];
+    pastMessages.forEach((pastMessage) => {
+        pastMessageArray.push({ role: 'user', content: pastMessage.message });
+        pastMessageArray.push({ role: 'assistant', content: pastMessage.replyMessage });
+    });
+
+    return pastMessageArray;
 };

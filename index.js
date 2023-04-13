@@ -1,6 +1,6 @@
 const { Configuration, OpenAIApi } = require('openai');
 const { personality } = require('./personality.js');
-const { putDynamoDB } = require('./dynamoDBFunctions.js');
+const { getMessageHistory, putMessageHistory } = require('./dynamoDBFunctions.js');
 const line = require('@line/bot-sdk');
 require('dotenv').config();
 
@@ -21,10 +21,15 @@ exports.handler = async (event) => {
     const timestamp = event.events[0].timestamp;
     const replyToken = event.events[0].replyToken;
 
+    // DynamoDBから直近5回の会話を取得
+    const pastMessages = await getMessageHistory(userId);
+    console.log('pastMessages:', pastMessages);
+
     const completion = await openai.createChatCompletion({
         model: 'gpt-3.5-turbo',
         messages: [
             { role: 'system', content: personality },
+            ...pastMessages,
             { role: 'user', content: message },
         ],
     });
@@ -35,7 +40,7 @@ exports.handler = async (event) => {
     };
 
     // DynamoDBに会話を保存
-    await putDynamoDB(userId, timestamp, message, replyMessage.text);
+    await putMessageHistory(userId, timestamp, message, replyMessage.text);
 
     // LINEに返信
     await client.replyMessage(replyToken, replyMessage);
