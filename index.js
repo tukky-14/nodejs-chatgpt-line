@@ -1,8 +1,7 @@
 const { Configuration, OpenAIApi } = require('openai');
-const line = require('@line/bot-sdk');
 const { personality } = require('./personality.js');
-const AWS = require('aws-sdk');
-const dynamodb = new AWS.DynamoDB({ region: 'ap-northeast-1' });
+const { putDynamoDB } = require('./dynamoDBFunctions.js');
+const line = require('@line/bot-sdk');
 require('dotenv').config();
 
 const configuration = new Configuration({
@@ -46,37 +45,3 @@ exports.handler = async (event) => {
         body: JSON.stringify('Message sent.'),
     };
 };
-
-/**
- * DynamoDBに会話履歴を保存
- * @param {*} userId
- * @param {*} timestamp
- * @param {*} message
- * @param {*} replyMessage
- */
-const putDynamoDB = async (userId, timestamp, message, replyMessage) => {
-    const params = {
-        TableName: 'baby_chat_history',
-        Item: {
-            user_id: { S: userId },
-            timestamp: { N: timestamp.toString() },
-            message: { S: message },
-            replyMessage: { S: replyMessage },
-        },
-    };
-
-    console.log('params:', params);
-
-    await dynamodb.putItem(params, function (err, data) {
-        if (err) {
-            console.error('Unable to put item. Error JSON:', JSON.stringify(err, null, 2));
-        } else {
-            console.log('PutItem succeeded:', JSON.stringify(data, null, 2));
-        }
-    });
-};
-
-// ■Todo
-// DynamoDBに作成日を追加（created_at）
-// DynamoDBに保存された直近の会話を取得し、会話の流れで返信
-// 30秒以内に回答できなかった場合に、返信する内容を追加
