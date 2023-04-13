@@ -1,5 +1,6 @@
 const AWS = require('aws-sdk');
 const dynamodb = new AWS.DynamoDB({ region: 'ap-northeast-1' });
+const dayjs = require('dayjs');
 
 /**
  * DynamoDBに会話履歴を保存
@@ -9,6 +10,7 @@ const dynamodb = new AWS.DynamoDB({ region: 'ap-northeast-1' });
  * @param {*} replyMessage
  */
 exports.putDynamoDB = async (userId, timestamp, message, replyMessage) => {
+    const now = dayjs().format('YYYYMMDDHHmmss');
     const params = {
         TableName: 'baby_chat_history',
         Item: {
@@ -16,6 +18,7 @@ exports.putDynamoDB = async (userId, timestamp, message, replyMessage) => {
             timestamp: { N: timestamp.toString() },
             message: { S: message },
             replyMessage: { S: replyMessage },
+            created_at: { N: now },
         },
     };
 
