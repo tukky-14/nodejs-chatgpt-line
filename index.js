@@ -28,7 +28,6 @@ exports.handler = async (event) => {
     const completion = await openai.createChatCompletion({
         model: 'gpt-3.5-turbo',
         temperature: 0.5, // 生成テキストの多様性
-        maxTokens: 2048, // 生成テキストの長さ
         messages: [
             { role: 'system', content: personality },
             ...pastMessages,
